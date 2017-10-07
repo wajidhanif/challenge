@@ -5,13 +5,11 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.Date;
 
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 import the.floow.challenge.entity.DataSource;
-import the.floow.challenge.enums.ExecutorStatus;
 
 public class SettingsDao extends GenericDao {
 

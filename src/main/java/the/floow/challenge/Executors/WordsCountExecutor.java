@@ -5,9 +5,10 @@ import org.bson.types.ObjectId;
 
 import the.floow.challenge.entity.DataSource;
 import the.floow.challenge.entity.InputParameter;
+import the.floow.challenge.processor.WordCountProcessor;
 import the.floow.challenge.service.ExecutorService;
 
-public class WordsCountExecutor {// implements GenericExecutor {
+public class WordsCountExecutor implements GenericExecutor {
 
 	public ObjectId executorID;
 	public DataSource ds;
@@ -36,7 +37,7 @@ public class WordsCountExecutor {// implements GenericExecutor {
 				Thread controllerThread = new Thread(controller);
 				controllerThread.start();
 
-				Worker worker = new Worker(this.inParams, executorID, fileID);
+				Worker worker = new Worker(this.inParams, executorID, fileID,new WordCountProcessor());
 				Thread workerThread = new Thread(worker);
 				workerThread.start();
 			}

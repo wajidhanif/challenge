@@ -1,7 +1,6 @@
 package the.floow.challenge.service;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.bson.types.ObjectId;
 
@@ -20,7 +19,7 @@ public class WorkerService extends GenericService {
 		return processedCount != totalCount ? true : false;
 	}
 
-	public void writeCountsToDB(ConcurrentHashMap<String, LongAdder> words) {
+	public void writeCountsToDB(ConcurrentHashMap<String, Long> words) {
 		this.wordsDao.create(this.fileID, this.executorID, words);
 	}
 

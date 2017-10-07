@@ -2,7 +2,6 @@ package the.floow.challenge.Executors;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
@@ -10,16 +9,12 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
 
-import the.floow.challenge.dao.ExecutorDao;
-import the.floow.challenge.dao.FileDao;
 import the.floow.challenge.dao.MongoMessageQueue;
-import the.floow.challenge.dao.SettingsDao;
-import the.floow.challenge.dao.WordsDao;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.entity.QueueMessage;
 import the.floow.challenge.enums.BlockStatus;
+import the.floow.challenge.processor.CountProcessor;
 import the.floow.challenge.service.WorkerService;
-import the.floow.challenge.utils.Util;
 
 public class Worker implements Runnable {
 
@@ -27,42 +22,28 @@ public class Worker implements Runnable {
 	public ObjectId executorID;
 	public ObjectId fileID;
 	public WorkerService workerService;
-
-	public ExecutorDao executorDao;
-	public FileDao fileDao;
-	public SettingsDao SettingsDao;
-	public WordsDao wordsDao;
-	ConcurrentHashMap<String, LongAdder> wordCounts;
+	private ConcurrentHashMap<String, Long> wordCounts;
+	private CountProcessor countProcessor;
+	
 	final static Logger logger = Logger.getLogger(Worker.class);
 
-	public Worker(InputParameter inputParams, ObjectId executorID, ObjectId fileID) {
+	public Worker(InputParameter inputParams, ObjectId executorID, ObjectId fileID,CountProcessor countProcessor) {
 		this.inputParams = inputParams;
 		this.executorID = executorID;
 		this.fileID = fileID;
 		this.workerService = new WorkerService(inputParams, executorID, fileID);
-
+		this.countProcessor = countProcessor;
+		this.wordCounts = new ConcurrentHashMap<String, Long>();
 	}
 
-	public void countWords(byte[] data) throws IOException {
+	public void merge(ConcurrentHashMap<String, LongAdder> newCounts) throws IOException {
 
-		List<String> list = Util.bytesToStringList(data);
-
-		if (this.wordCounts == null) {
-			this.wordCounts = new ConcurrentHashMap<String, LongAdder>();
-		}
-		
-		list.parallelStream()
-			.map(line -> line.split("\\s+"))			/* split line into words*/
-			.flatMap(Arrays::stream)
-			.parallel()
-			.filter(w -> w.matches("\\w+"))				/*filter out non-word items*/
-			.map(String::toLowerCase)
-				.forEach(word -> {
-					if (!wordCounts.containsKey(word))
-						wordCounts.put(word, new LongAdder());
-					wordCounts.get(word).increment();
+		newCounts.forEach((key,value) -> {
+					if (!wordCounts.containsKey(key))
+						wordCounts.put(key, value.longValue());
+					else
+						wordCounts.put(key, Long.valueOf(wordCounts.get(key).longValue() + value.longValue()));
 				});
-
 	}
 
 	@Override
@@ -77,7 +58,7 @@ public class Worker implements Runnable {
 					QueueMessage message = queue.dequeue();
 					if (message != null) {
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSING);
-						this.countWords(message.data);
+						this.merge(this.countProcessor.counts(message.data)); /*count + merge*/
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSED);
 						processedBlocks.add(message.blockNo);
 					}
@@ -91,7 +72,7 @@ public class Worker implements Runnable {
 				if (!isRunning || this.workerService.isMemoryFull()) {
 					this.workerService.writeCountsToDB(this.wordCounts);
 					this.workerService.updateBlockStatus(processedBlocks, BlockStatus.WRITTEN);
-					this.wordCounts = null;
+					this.wordCounts = new ConcurrentHashMap<String, Long>();;
 					processedBlocks = new ArrayList<>();
 				}
 			}

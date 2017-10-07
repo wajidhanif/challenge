@@ -1,12 +1,12 @@
 package the.floow.challenge.dao;
 
-import java.util.ArrayList;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -29,7 +29,7 @@ public class WordsDao extends GenericDao {
 		MongoDatabase database = this.getMongoDatabase();
 		return database.getCollection(this.wordsCollectionName);		
 	}
-	public void create(ObjectId fileID, ObjectId executorID, ConcurrentHashMap<String, LongAdder> words) {
+	public void create(ObjectId fileID, ObjectId executorID, ConcurrentHashMap<String, Long> words) {
 		MongoCollection<Document> wordsCollection = this.getWordCollection();
 		List<Document> wordList = new ArrayList<Document>();
 
@@ -61,10 +61,8 @@ public class WordsDao extends GenericDao {
                   "return counts;"+
                "}";
 
-		//wordsCollection.mapReduce(map, reduce).action(MapReduceAction.REDUCE).collectionName(this.wordCountscollectionName).first();
-		
-		wordsCollection.mapReduce(map, reduce).filter(eq("executorID",executorID)).action(MapReduceAction.REDUCE).collectionName(this.wordCountscollectionName).first();
-		// remove all words computed by executor 
-		wordsCollection.deleteMany(eq("executorID",executorID));
+		wordsCollection.mapReduce(map, reduce).filter(and(eq("executorID",executorID),eq("createdTimestamp",now))).action(MapReduceAction.REDUCE).collectionName(this.wordCountscollectionName).first();
+		// remove all words computed by executor		
+		//wordsCollection.deleteMany(eq("executorID",executorID)); 
 	}
 }
