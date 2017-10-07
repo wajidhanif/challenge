@@ -1,5 +1,6 @@
 package the.floow.challenge.dao;
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.ArrayList;
@@ -7,15 +8,19 @@ import java.util.Date;
 import java.util.List;
 
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
 
 import the.floow.challenge.entity.DataSource;
 import the.floow.challenge.entity.Executor;
+import the.floow.challenge.entity.QueueMessage;
 import the.floow.challenge.enums.ExecutorStatus;
+import the.floow.challenge.enums.MessageQueueStatus;
 
 public class ExecutorDao extends GenericDao {
 	
@@ -33,7 +38,10 @@ public class ExecutorDao extends GenericDao {
 		
 		Document excDoc = new Document("name", name)
                 .append("status", ExecutorStatus.LIVE.getValue())
-                .append("createdTimestamp", new Date());
+                .append("isServer", 0)
+                .append("createdTimestamp", new Date())
+                .append("updatedTimestamp", new Date())
+                .append("runningTimestamp", new Date());
 		
 		collection.insertOne(excDoc);	
 		ObjectId executorID = (ObjectId)excDoc.get( "_id" );
@@ -52,7 +60,7 @@ public class ExecutorDao extends GenericDao {
 		try {
 		    while (docsCursor.hasNext()) {
 		    	Document doc = docsCursor.next();
-		    	executors.add(new Executor(doc.getString("name"), doc.getString("status")));
+		    	executors.add(new Executor(doc.getString("name"), doc.getString("status"), doc.getDate("runningTimestamp")));
 		    }
 		} finally {
 			docsCursor.close();
@@ -69,8 +77,51 @@ public class ExecutorDao extends GenericDao {
 		}
 		return id;
 	}
+	public Executor getExecutor(ObjectId id){
+		MongoCollection<Document> collection = this.getExecutorCollection();
+		Document doc = collection.find(eq("_id", id)).first();
+		Executor executor = null;
+		if(doc!=null){
+			executor  = new Executor(doc.getString("name"), doc.getString("status"), doc.getDate("runningTimestamp"));
+		}
+		return executor;
+	}
+	
 	public void updateExectorStatus(ObjectId executorID, ExecutorStatus status){
 		MongoCollection<Document> collection = this.getExecutorCollection();
 	 	collection.updateOne(eq("_id", executorID),new Document("$set", new Document("status", status.getValue()).append("updatedTimestamp", new Date())));
 	}
+
+	public ObjectId updateExecutorAsServer() {
+		MongoCollection<Document> collection = this.getExecutorCollection();	
+		Document doc = collection.findOneAndUpdate (
+					eq("isServer", 0), 
+                    new Document("$set", new Document("isServer", 1)),
+                    new FindOneAndUpdateOptions().sort(new Document("_id",1))
+				); 
+
+		ObjectId id = null;
+		if(doc!=null){
+			id = (ObjectId)doc.get( "_id" );
+		}
+		return id;
+	}
+	
+	public Executor getExecutorAsServer(){
+		MongoCollection<Document> collection = this.getExecutorCollection();
+		Document doc = collection.find(eq("isServer", 1)).first();
+		Executor executor = null;
+		if(doc!=null){
+			executor  = new Executor(doc.getString("name"), doc.getString("status"), doc.getDate("runningTimestamp"));
+		}
+		return executor;
+	}
+	public void updateExectorRunningTime(ObjectId executorID){
+		MongoCollection<Document> collection = this.getExecutorCollection();
+	 	collection.updateOne(eq("_id", executorID),new Document("$set", new Document("runningTimestamp", new Date()).append("status", ExecutorStatus.LIVE)));
+	}	
+	public void updateExectorServerInfo(ObjectId executorID){
+		MongoCollection<Document> collection = this.getExecutorCollection();
+	 	collection.updateOne(eq("_id", executorID),new Document("$set", new Document("isServer", 0)));
+	}	
 }

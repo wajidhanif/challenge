@@ -32,7 +32,7 @@ public class WordsDao extends GenericDao {
 	public void create(ObjectId fileID, ObjectId executorID, ConcurrentHashMap<String, Long> words) {
 		MongoCollection<Document> wordsCollection = this.getWordCollection();
 		List<Document> wordList = new ArrayList<Document>();
-
+		
 		Date now = new Date();
 		words.forEach((key, val) -> {
 			Document word = new Document("FileID", fileID).append("executorID", executorID).append("word", key)
@@ -42,6 +42,7 @@ public class WordsDao extends GenericDao {
 
 		wordsCollection.insertMany(wordList);
 		
+		/*
 		String map ="function() {"+
                 "var key = {"+
                               "FileID: this.FileID,"+
@@ -63,6 +64,32 @@ public class WordsDao extends GenericDao {
 
 		wordsCollection.mapReduce(map, reduce).filter(and(eq("executorID",executorID),eq("createdTimestamp",now))).action(MapReduceAction.REDUCE).collectionName(this.wordCountscollectionName).first();
 		// remove all words computed by executor		
-		//wordsCollection.deleteMany(eq("executorID",executorID)); 
+		//wordsCollection.deleteMany(eq("executorID",executorID));
+		 
+		*/
+	}
+	public void mapReduce(ObjectId fileID) {
+		MongoCollection<Document> wordsCollection = this.getWordCollection();
+
+		String map ="function() {"+
+                "var key = {"+
+                              "FileID: this.FileID,"+
+                              "word: this.word"+
+                             "};"+
+                "var value = this.counts;"+
+                "emit( key, value);"+
+                
+            "}";
+
+		String reduce = "function(key, values) {"+
+                  "var counts= 0;"+
+                  "values.forEach( function(value) {"+
+                                        "counts += value;"+
+                                  "}"+
+                                ");"+
+                  "return counts;"+
+               "}";
+
+		wordsCollection.mapReduce(map, reduce).filter(eq("FileID",fileID)).action(MapReduceAction.REPLACE).collectionName(this.wordCountscollectionName).first();
 	}
 }

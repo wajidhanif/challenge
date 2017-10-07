@@ -1,6 +1,8 @@
 package the.floow.challenge.Executors;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
@@ -9,6 +11,7 @@ import the.floow.challenge.dao.MongoMessageQueue;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.entity.QueueMessage;
 import the.floow.challenge.enums.BlockStatus;
+import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.enums.FileStatus;
 import the.floow.challenge.service.WorkerControllerService;
 
@@ -29,11 +32,33 @@ public class WorkerController implements Runnable {
 
 	@Override
 	public void run() {
+		boolean isRunning = true;
+		
 		try {
+			boolean isFailover = false;
+			/*Check server failure case */
+			while(!isFailover){
+				// check whether current executor is a server or not. 
+				if(this.wControllerService.isExecutorAsServer()){
+					isFailover = true;
+				}else{
+					Thread.sleep(this.wControllerService.serverDefaultWait);
+					this.wControllerService.updateExectorRunningTime();
+					
+					boolean isServerRunning = this.wControllerService.isServerRunning(); 
+					if(!isServerRunning){
+						// check file processed or not
+						boolean isFileProcessed =this.wControllerService.isFileProcessed();
+						if(isFileProcessed){
+							isRunning = false; // no need to run the below code
+							isFailover = true; 						
+						}	
+					}
+				}				
+			}		
 			
-			boolean isRunning = true;
 			while (isRunning) {
-
+				
 				List<Integer> availBlocks = this.wControllerService.getFileAvailableBlocks(this.fileID);
 				MongoMessageQueue queue = this.wControllerService.getMessageQueue();
 
@@ -58,17 +83,26 @@ public class WorkerController implements Runnable {
 						}
 					}
 				}
-				// stop the server if all block processed and written to
-				// database
+				/* stop the server if all block processed and written to database*/
 				isRunning = this.wControllerService.isProcessFinished();
 			
-				// update file status
+				// update file status and count words in db using map reduce
 				if(!isRunning){
+					this.wControllerService.mapReduceWords();
 					this.wControllerService.updateFileStaus(FileStatus.PROCESSED);
-				}
+					this.wControllerService.updateExectorServerInfo();
+					
+				}else{
+					this.wControllerService.checkWorkerFailOver();
+				}				
 			}
 		} catch (Exception ex) {
 			logger.error("Exception Occurs (Please see logs for more details:" + ex.getMessage());
+		}finally{
+			/*if any exception come, then update the executor isServer parameter*/
+			if(isRunning){
+				this.wControllerService.updateExectorServerInfo();
+			}
 		}
 		logger.debug("File has been processed!");
 	}

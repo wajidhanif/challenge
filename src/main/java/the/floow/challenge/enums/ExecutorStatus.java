@@ -2,7 +2,6 @@ package the.floow.challenge.enums;
 
 public enum ExecutorStatus {
 	LIVE("live"), 
-	EXECUTING("executing"), 
 	STANDBY("standby"), 
 	STOP("stop");
 

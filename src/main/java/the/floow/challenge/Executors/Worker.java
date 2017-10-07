@@ -13,6 +13,7 @@ import the.floow.challenge.dao.MongoMessageQueue;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.entity.QueueMessage;
 import the.floow.challenge.enums.BlockStatus;
+import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.processor.CountProcessor;
 import the.floow.challenge.service.WorkerService;
 
@@ -48,11 +49,15 @@ public class Worker implements Runnable {
 
 	@Override
 	public void run() {
-
-		try {
-			List<Integer> processedBlocks = new ArrayList<>();
-			boolean isRunning = true;
-			while (isRunning) {
+		boolean isRunning = true;
+		boolean isProcessed = false;
+		List<Integer> processedBlocks = new ArrayList<>();
+		long now = System.currentTimeMillis();
+		try {				
+			while (isRunning) {	
+				// acknowledge current controller: I am running. 
+				this.workerService.updateExectorRunningTime();
+				
 				MongoMessageQueue queue = this.workerService.getMessageQueue();
 				if (!queue.empty()) {
 					QueueMessage message = queue.dequeue();
@@ -64,20 +69,42 @@ public class Worker implements Runnable {
 					}
 				}
 
-				isRunning = this.workerService.isBlockProcessed();
+				isProcessed = this.workerService.isBlockProcessed();
 				/*
-				 * write words to database if all blocks processed or memory
-				 * utilization > 90% (Configurable by Setting collection)
+				 * write words to database if all blocks processed or  
+				 * memory utilization > 90% (Configurable by Setting collection)
+				 * 
 				 */
-				if (!isRunning || this.workerService.isMemoryFull()) {
-					this.workerService.writeCountsToDB(this.wordCounts);
-					this.workerService.updateBlockStatus(processedBlocks, BlockStatus.WRITTEN);
+				if ((isProcessed || this.workerService.isMemoryFull()) && this.wordCounts.size() > 0) {
+					/* if this worker hang/timeout, then server stop  it.  No need to write to db.*/
+					boolean isStop = this.workerService.isStopByServer();
+					if(!isStop){
+						this.workerService.writeCountsToDB(this.wordCounts);
+						this.workerService.updateBlockStatus(processedBlocks, BlockStatus.WRITTEN);						
+					}
 					this.wordCounts = new ConcurrentHashMap<String, Long>();;
 					processedBlocks = new ArrayList<>();
+				}
+				
+				if(isProcessed){
+					isRunning = this.workerService.isProcessFinished();
+					
+					/* Worker finished it's processing but all blocks are not written 
+					 * Failure case may occur - Wait for 2 Minutes (default wait time - configurable by setting collection) */
+					if(isRunning){
+						Thread.sleep(this.workerService.workDefaultWait); 
+					}
 				}
 			}
 		} catch (Exception ex) {
 			logger.error("Exception Occurs (Please see logs for more details:" + ex.getMessage());
+		}
+		finally{	
+			/*if any exception come, then make all block available which are not written yet*/
+			if(isRunning && processedBlocks.size() > 0){
+				this.workerService.updateBlockStatus(processedBlocks, BlockStatus.AVAILABLE);
+				this.workerService.updateExectorStatus(ExecutorStatus.STOP);				
+			}
 		}
 		logger.info("Worker process finished: Worker ID:"+this.executorID);
 	}

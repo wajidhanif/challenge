@@ -31,18 +31,22 @@ public class WordsCountExecutor implements GenericExecutor {
 			// register executor and create file if no present
 			ObjectId executorID = executorService.register();
 			ObjectId fileID = executorService.createFile(executorID);
-
+			
 			if (fileID != null) {
-				WorkerController controller = new WorkerController(this.inParams, executorID, fileID);
-				Thread controllerThread = new Thread(controller);
-				controllerThread.start();
+				/*If executor has file, then it can be a controller*/
+				boolean isController = this.executorService.isExecutorAsController();
+				if (isController) {
+					WorkerController controller = new WorkerController(this.inParams, executorID, fileID);
+					Thread controllerThread = new Thread(controller);
+					controllerThread.start();
+				}
 
-				Worker worker = new Worker(this.inParams, executorID, fileID,new WordCountProcessor());
+				Worker worker = new Worker(this.inParams, executorID, fileID, new WordCountProcessor());
 				Thread workerThread = new Thread(worker);
 				workerThread.start();
 			}
 		} catch (Exception Ex) {
-			logger.error("Exception Occurs (Please see logs for more details:" + Ex.getMessage());
-		} 
+			logger.error("Exception Occurs - Please see logs for more details:" + Ex.getMessage());
+		}
 	}
 }

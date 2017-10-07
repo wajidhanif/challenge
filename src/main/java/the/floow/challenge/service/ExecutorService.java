@@ -12,8 +12,11 @@ import the.floow.challenge.utils.Util;
 
 public class ExecutorService extends GenericService{
 	
+	public boolean isFileExist;
+	
 	public ExecutorService(InputParameter inParams) {
 		super(inParams, null, null);
+		this.isFileExist = true;
 	}
 	
 	public ObjectId createFile(ObjectId executorID) throws IOException{
@@ -34,6 +37,7 @@ public class ExecutorService extends GenericService{
 		}else{
 			//if no file parameter, then get the first file which is processing.  
 			fileID = this.fileDao.getFileID();
+			this.isFileExist = false;
 		}
 		this.fileID = fileID;
 		this.executorID = executorID;
@@ -49,5 +53,21 @@ public class ExecutorService extends GenericService{
 			this.executorDao.updateExectorStatus(executorID, ExecutorStatus.LIVE);
 		}
 		return executorID;
+	}
+	/*
+	public boolean isExecutorAsServer(){
+		/* if executor does not have file, then it cannot be a server
+		if(!this.isFileExist){
+			return false;
+		}			
+		ObjectId exeID = this.executorDao.getExecutorAsServer();
+		if(exeID== null){
+			exeID = this.executorDao.updateExecutorAsServer();
+		}
+		return this.executorID == exeID ? true : false;
+	}
+*/
+	public boolean isExecutorAsController(){
+		return this.isFileExist;
 	}
 }
