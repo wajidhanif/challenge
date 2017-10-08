@@ -8,7 +8,6 @@ import org.bson.types.ObjectId;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.utils.FileUtil;
-import the.floow.challenge.utils.Util;
 
 public class ExecutorService extends GenericService{
 	
@@ -33,7 +32,11 @@ public class ExecutorService extends GenericService{
 				if(blockCounts == 0){
 					this.blockDao.createFileBlocks(fileID, this.blockSize, FileUtil.getFileSize(this.inputParams.filePath));
 				}
+			}else{
+				// if server comes from failure, then make all blocks available except written
+				this.blockDao.updateBlockStatusToAvailable(fileID, executorID);
 			}
+			
 		}else{
 			//if no file parameter, then get the first file which is processing.  
 			fileID = this.fileDao.getFileID();
@@ -45,28 +48,16 @@ public class ExecutorService extends GenericService{
 	}	
 
 	public ObjectId register() throws UnknownHostException {
-		String hostName = Util.getHostName();
+		String hostName = "192.168.1.1";//Util.getHostName();
 		ObjectId executorID = this.executorDao.getExecutor(hostName);
 		if(executorID==null){
 			executorID = this.executorDao.create(hostName);
 		}else{
-			this.executorDao.updateExectorStatus(executorID, ExecutorStatus.LIVE);
+			this.executorDao.updateExectorStatus(executorID, ExecutorStatus.LIVE);			
 		}
 		return executorID;
 	}
-	/*
-	public boolean isExecutorAsServer(){
-		/* if executor does not have file, then it cannot be a server
-		if(!this.isFileExist){
-			return false;
-		}			
-		ObjectId exeID = this.executorDao.getExecutorAsServer();
-		if(exeID== null){
-			exeID = this.executorDao.updateExecutorAsServer();
-		}
-		return this.executorID == exeID ? true : false;
-	}
-*/
+	
 	public boolean isExecutorAsController(){
 		return this.isFileExist;
 	}

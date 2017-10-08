@@ -134,4 +134,12 @@ public class FileBlockDao extends GenericDao {
 					.append("updatedTimestamp", new Date()));
 	 	collection.updateMany(and(eq("fileID", fileID), eq("executorID", executorID)),setParams);
 	}
+	public void updateBlockStatusToAvailable(ObjectId fileID, ObjectId executorID){
+		MongoCollection<Document> collection = this.getFileBlockCollection();
+		Document setParams = new Document("$set", 
+				new Document("status", BlockStatus.AVAILABLE.getValue())
+					.append("executorID", "")
+					.append("updatedTimestamp", new Date()));
+	 	collection.updateMany(and(eq("fileID", fileID), eq("executorID", executorID), ne("status",BlockStatus.WRITTEN.getValue())),setParams);
+	}
 }

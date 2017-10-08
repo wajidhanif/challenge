@@ -84,7 +84,7 @@ public class FileDao extends GenericDao {
 	public boolean isFileProcessed(ObjectId fileID){
 		MongoCollection<Document> collection = this.getFileCollection();
 		Document file = collection.find(eq("_id", fileID)).first();
-		FileStatus status = FileStatus.valueOf(file.getString("status"));
+		FileStatus status = FileStatus.valueOf(file.getString("status").toUpperCase());
 		return status.equals(FileStatus.PROCESSED) ? true:false;
 
 	}

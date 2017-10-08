@@ -1,6 +1,5 @@
 package the.floow.challenge.dao;
 
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.ArrayList;
@@ -42,31 +41,6 @@ public class WordsDao extends GenericDao {
 
 		wordsCollection.insertMany(wordList);
 		
-		/*
-		String map ="function() {"+
-                "var key = {"+
-                              "FileID: this.FileID,"+
-                              "word: this.word"+
-                             "};"+
-                "var value = this.counts;"+
-                "emit( key, value);"+
-                
-            "}";
-
-		String reduce = "function(key, values) {"+
-                  "var counts= 0;"+
-                  "values.forEach( function(value) {"+
-                                        "counts += value;"+
-                                  "}"+
-                                ");"+
-                  "return counts;"+
-               "}";
-
-		wordsCollection.mapReduce(map, reduce).filter(and(eq("executorID",executorID),eq("createdTimestamp",now))).action(MapReduceAction.REDUCE).collectionName(this.wordCountscollectionName).first();
-		// remove all words computed by executor		
-		//wordsCollection.deleteMany(eq("executorID",executorID));
-		 
-		*/
 	}
 	public void mapReduce(ObjectId fileID) {
 		MongoCollection<Document> wordsCollection = this.getWordCollection();

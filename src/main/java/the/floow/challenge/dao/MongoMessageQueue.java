@@ -32,7 +32,7 @@ public class MongoMessageQueue extends GenericDao {
 							.append("data", message.data)
 							.append("status", MessageQueueStatus.AVAILABLE.getValue());
 
-		collection.insertOne(doc);
+		collection.insertOne(doc);		
 	}
 
 	public QueueMessage dequeue() {

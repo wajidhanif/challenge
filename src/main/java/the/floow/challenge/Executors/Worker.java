@@ -52,7 +52,9 @@ public class Worker implements Runnable {
 		boolean isRunning = true;
 		boolean isProcessed = false;
 		List<Integer> processedBlocks = new ArrayList<>();
-		long now = System.currentTimeMillis();
+		
+		logger.debug("Worker Started: "+this.workerService.executorID);
+		
 		try {				
 			while (isRunning) {	
 				// acknowledge current controller: I am running. 
@@ -61,7 +63,9 @@ public class Worker implements Runnable {
 				MongoMessageQueue queue = this.workerService.getMessageQueue();
 				if (!queue.empty()) {
 					QueueMessage message = queue.dequeue();
+					
 					if (message != null) {
+						logger.debug("dequeue: " + message.blockNo);
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSING);
 						this.merge(this.countProcessor.counts(message.data)); /*count + merge*/
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSED);

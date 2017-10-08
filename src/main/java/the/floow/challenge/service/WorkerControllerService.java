@@ -43,8 +43,8 @@ public class WorkerControllerService extends GenericService {
 			long lastRunTime = executor.runningTimestamp.getTime();
 			long diff = now - lastRunTime;
 			if (diff > this.workerMaxWaitTime) {
-				this.blockDao.updateBlockStatus(this.fileID, this.executorID, BlockStatus.AVAILABLE);
-				this.executorDao.updateExectorStatus(this.executorID,ExecutorStatus.STOP);
+				this.blockDao.updateBlockStatus(this.fileID, executor.id, BlockStatus.AVAILABLE);
+				this.executorDao.updateExectorStatus(executor.id,ExecutorStatus.STOP);
 			}
 		}
 	}
@@ -64,7 +64,9 @@ public class WorkerControllerService extends GenericService {
 			long diff = now - lastRunTime;
 			running = true;
 			if (diff > this.serverDefaultWait) {
-				this.executorDao.updateExectorServerInfo(this.executorID);
+				//this.executorDao.updateExectorServerInfo();
+				this.executorDao.deleteExector(executor.id);
+				this.blockDao.updateBlockStatus(this.fileID, executor.id,BlockStatus.AVAILABLE);
 				running = false;
 			}
 			
@@ -77,12 +79,16 @@ public class WorkerControllerService extends GenericService {
 		ObjectId exeID = null;
 		if(executor== null){
 			exeID  = this.executorDao.updateExecutorAsServer();
+		}else{
+			exeID = executor.id;
 		}
-		return this.executorID == exeID ? true : false;
+		return this.executorID.equals(exeID) ? true : false;
 	}
 	
 	public boolean isFileProcessed(){
 		return this.fileDao.isFileProcessed(this.fileID);
 	}
-
+	public void updateExectorStatus( ExecutorStatus status) {
+		this.executorDao.updateExectorStatus(this.executorID,status);
+	}
 }

@@ -10,8 +10,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 public class Util {
 
+	final static Logger logger = Logger.getLogger(Util.class);
+	
 	public static String getHostName() throws UnknownHostException {
 		return InetAddress.getLocalHost().getHostAddress();
 	}
@@ -56,7 +60,7 @@ public class Util {
 	        try {
 	            n = new Integer(Integer.parseInt(str));
 	        } catch (NumberFormatException ex) {
-	        	//TODO: log exception log4j
+	        	logger.info("Assign Default value because the string ("+str+") is not number ");
 	        }
 
 	        return n;

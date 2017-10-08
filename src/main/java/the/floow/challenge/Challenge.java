@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import the.floow.challenge.Executors.WordsCountExecutor;
+import the.floow.challenge.Executors.CountExecutor;
 import the.floow.challenge.entity.DataSource;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.service.ChallengeService;
@@ -45,7 +45,8 @@ public class Challenge {
 			// set the settings in db
 			new Challenge().init(inParams);
 
-			WordsCountExecutor wcExecutor = new WordsCountExecutor(inParams);
+			// CountProcessor can also be passed to  
+			CountExecutor wcExecutor = new CountExecutor(inParams);
 			wcExecutor.execute();
 
 		} catch (IllegalArgumentException ex) {

@@ -18,9 +18,10 @@ public class Executor {
 		this.name = name;
 		this.status = status;
 	}
-	public Executor(String name, String status, Date runTime) {
+	public Executor(ObjectId id, String name, String status, Date runTime) {
+		this.id = id;
 		this.name = name;
-		this.status = ExecutorStatus.valueOf(status);
+		this.status = ExecutorStatus.valueOf(status.toUpperCase());
 		this.runningTimestamp= runTime;
 	}
 	public Executor(String name, String status) {

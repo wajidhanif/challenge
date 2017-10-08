@@ -1,14 +1,8 @@
 package the.floow.challenge.service;
 
-import static com.mongodb.client.model.Filters.eq;
-
-import java.util.Date;
 import java.util.List;
 
-import org.bson.Document;
 import org.bson.types.ObjectId;
-
-import com.mongodb.client.MongoCollection;
 
 import the.floow.challenge.dao.ExecutorDao;
 import the.floow.challenge.dao.FileBlockDao;
