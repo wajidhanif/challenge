@@ -136,7 +136,7 @@ and view the final results
 
 ***Architecture:***
 
-![alt text](https://github.com/wajidhanif/challenge/downloads/architecture.jpg)
+![alt text](https://github.com/wajidhanif/challenge/blob/master/downloads/architecture.jpg)
 
 
 ***Executor:***
