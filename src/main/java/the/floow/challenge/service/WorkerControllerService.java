@@ -43,7 +43,8 @@ public class WorkerControllerService extends GenericService {
 			long lastRunTime = executor.runningTimestamp.getTime();
 			long diff = now - lastRunTime;
 			if (diff > this.workerMaxWaitTime) {
-				this.blockDao.updateBlockStatus(this.fileID, executor.id, BlockStatus.AVAILABLE);
+				this.blockDao.updateBlockStatusToAvailable(this.fileID, executor.id);
+				//this.blockDao.updateBlockStatus(this.fileID, executor.id, BlockStatus.AVAILABLE);
 				this.executorDao.updateExectorStatus(executor.id,ExecutorStatus.STOP);
 			}
 		}

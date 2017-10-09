@@ -13,6 +13,10 @@ import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.enums.FileStatus;
 import the.floow.challenge.service.WorkerControllerService;
 
+/**
+This is the controller runnable class which controls the distribution of 
+workload between executors 
+@author Wajid */
 public class WorkerController implements Runnable {
 
 	public InputParameter inputParams;
@@ -29,17 +33,25 @@ public class WorkerController implements Runnable {
 		this.wControllerService = new WorkerControllerService(inputParams, executorID, fileID);
 		this.isRunning = true;
 	}
+	/** 
+	This function continuously checks for possible failure of executor which is currently 
+	distributing the workload. This function is performing following functionalities
+	
+	1. If there is a running executor as controller, then sleep for default server wait time.
+	2. If the running executor is not responding for default wait and file is not processed yet, 
+	   then make the current executor as controller. 
+	*/
 	
 	public void waitForFailover() throws InterruptedException{
 		boolean isFailover = false;
 		/*Check server failure case */
 		while(!isFailover){
 			// check whether current executor is a server or not. 
-			logger.debug("WaitForFailover: " + this.wControllerService.executorID);
 			if(this.wControllerService.isExecutorAsServer()){
 				isFailover = true;
 			}else{
 				Thread.sleep(this.wControllerService.serverDefaultWait);
+				/*update the running time*/
 				this.wControllerService.updateExectorRunningTime();
 				
 				boolean isServerRunning = this.wControllerService.isServerRunning(); 
@@ -55,14 +67,23 @@ public class WorkerController implements Runnable {
 		}
 	}
 	
+	/** 
+	This function is distributing the workload. This function is performing following functionalities
+	
+	1.Gets all the available file blocks from database
+	2.If the message queue is empty or max queue size is not reached yet, then it reads the file block 
+	  from file and puts it in the message queue for executors to process it
+	3.If all blocks have been processed by executors then it calls mongodb mapreduce to calculate the counts
+	4.Checks the executor failure: if the executor is not responding for default max wait time, then
+	  it makes the blocks available for other executors which are processed by this executor   
+	*/
 	@Override
 	public void run() {		
 		
 		try {
-			logger.debug("Check  Failover : ");
 			// controller will wait for failover if any
 			this.waitForFailover();
-			logger.debug("Controller Running: ");
+	
 			while (this.isRunning) {
 				
 				List<Integer> availBlocks = this.wControllerService.getFileAvailableBlocks(this.fileID);
@@ -86,7 +107,6 @@ public class WorkerController implements Runnable {
 							this.wControllerService.updateBlockStatus(blockNo, BlockStatus.QUEUED);
 							QueueMessage message = this.wControllerService.getQueueMessage(blockNo);
 							queue.enqueue(message);
-							logger.debug("Enqueue: " + blockNo);
 						}
 					}
 				}

@@ -12,7 +12,9 @@ import com.mongodb.client.model.FindOneAndUpdateOptions;
 import the.floow.challenge.entity.DataSource;
 import the.floow.challenge.entity.QueueMessage;
 import the.floow.challenge.enums.MessageQueueStatus;
-
+/**
+This class is managing queue in mongoDB
+@author Wajid */
 public class MongoMessageQueue extends GenericDao {
 
 	private final String collectionName = "messages";
@@ -25,6 +27,11 @@ public class MongoMessageQueue extends GenericDao {
 		MongoDatabase database = this.getMongoDatabase();
 		return database.getCollection(collectionName);		
 	}
+	/**
+		This function enqueues the data into message collection
+
+		@param message the input parameter as QueueMessage Entity
+	 */
 	public void enqueue(QueueMessage message) {
 		
 		MongoCollection<Document> collection = this.getMessageQueueCollection();
@@ -34,7 +41,11 @@ public class MongoMessageQueue extends GenericDao {
 
 		collection.insertOne(doc);		
 	}
-
+	/**
+		This function atomically dequeues the data into message collection
+	
+		@return the first available QueueMessage
+	 */
 	public QueueMessage dequeue() {
 
 		MongoCollection<Document> collection = this.getMessageQueueCollection();
@@ -56,11 +67,19 @@ public class MongoMessageQueue extends GenericDao {
 		}		
 		return message;
 	}
-
+	/**
+		This function returns the size of the queue
+		
+		@return size as long
+	 */
 	public long size() {
 		return this.getMessageQueueCollection().count();
 	}
-
+	/**
+		This function checks whether the queue is empty or not. 
+		
+		@return is empty as boolean
+	 */
 	public boolean empty() {
 		return this.getMessageQueueCollection().count() == 0 ? true : false;
 	}

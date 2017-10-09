@@ -8,6 +8,7 @@ import org.bson.types.ObjectId;
 import the.floow.challenge.entity.InputParameter;
 import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.utils.FileUtil;
+import the.floow.challenge.utils.Util;
 
 public class ExecutorService extends GenericService{
 	
@@ -48,7 +49,7 @@ public class ExecutorService extends GenericService{
 	}	
 
 	public ObjectId register() throws UnknownHostException {
-		String hostName = "192.168.1.1";//Util.getHostName();
+		String hostName = Util.getHostName();
 		ObjectId executorID = this.executorDao.getExecutor(hostName);
 		if(executorID==null){
 			executorID = this.executorDao.create(hostName);

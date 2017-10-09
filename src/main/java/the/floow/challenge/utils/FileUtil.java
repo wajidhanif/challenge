@@ -11,7 +11,7 @@ public class FileUtil {
 		RandomAccessFile file = new RandomAccessFile(filePath, "r");
 		long len = file.length();
 		file.close();
-		return len;
+		return len; 
 	}
 	
 	public static byte [] readFileByBlock(int blockNum, String filePath, long blockSize) throws IOException {

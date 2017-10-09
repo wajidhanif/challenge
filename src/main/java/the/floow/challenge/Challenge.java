@@ -22,10 +22,11 @@ public class Challenge {
 		try {
 			String source = "";
 			DataSource ds = null;
-
+			/*if mongo parameter is missing then there is no need to run the program*/
 			if (args.length == 0 || !Arrays.asList(args).contains("-mongo")) {
 				throw new IllegalArgumentException("Please provide the required parameter(-mongo)");
 			}
+			/*parsing parameter for source and mongo db */
 			for (int i = 0; i < args.length; i++) {
 				if (args[i].equals("-mongo")) {
 					String dbUrl = args[i + 1];
@@ -41,11 +42,14 @@ public class Challenge {
 					source = args[i + 1];
 				}
 			}
+			
+			/*preparing the input parameter object for executor usage*/
 			InputParameter inParams = new InputParameter(source, ds);
-			// set the settings in db
+			
+			// set the settings collection in db
 			new Challenge().init(inParams);
 
-			// CountProcessor can also be passed to  
+			/*By default: CountExecutor behaves as word count executor (the.floow.challenge.processor.WordCountProcessor).*/  
 			CountExecutor wcExecutor = new CountExecutor(inParams);
 			wcExecutor.execute();
 

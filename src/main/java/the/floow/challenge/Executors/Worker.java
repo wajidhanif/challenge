@@ -16,7 +16,10 @@ import the.floow.challenge.enums.BlockStatus;
 import the.floow.challenge.enums.ExecutorStatus;
 import the.floow.challenge.processor.CountProcessor;
 import the.floow.challenge.service.WorkerService;
-
+/**
+This is the worker runnable class which processes 
+the file-blocks and counts words
+@author Wajid */
 public class Worker implements Runnable {
 
 	public InputParameter inputParams;
@@ -36,7 +39,9 @@ public class Worker implements Runnable {
 		this.countProcessor = countProcessor;
 		this.wordCounts = new ConcurrentHashMap<String, Long>();
 	}
-
+	/** 
+	This function merges the words count processed by CountProcessor into worker's wordCounts HashMap  
+	*/
 	public void merge(ConcurrentHashMap<String, LongAdder> newCounts) throws IOException {
 
 		newCounts.forEach((key,value) -> {
@@ -46,7 +51,16 @@ public class Worker implements Runnable {
 						wordCounts.put(key, Long.valueOf(wordCounts.get(key).longValue() + value.longValue()));
 				});
 	}
-
+	/** 
+		This function is processing file-blocks and counting the words
+			
+		Functionalities includes:		
+		1.Gets file-block data from message queue
+		2.Calls the assigned CountProcessor (by default word count processor) to count words
+		3.Merges the data with worker hashmap
+		4.Writes the word counts to database, if all blocks processed or memory is full 
+		5.Waits for the controller-executor, if all blocks are not processed yet
+	*/
 	@Override
 	public void run() {
 		boolean isRunning = true;
@@ -65,7 +79,6 @@ public class Worker implements Runnable {
 					QueueMessage message = queue.dequeue();
 					
 					if (message != null) {
-						logger.debug("dequeue: " + message.blockNo);
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSING);
 						this.merge(this.countProcessor.counts(message.data)); /*count + merge*/
 						this.workerService.updateBlockStatus(message.blockNo, BlockStatus.PROCESSED);
@@ -102,6 +115,7 @@ public class Worker implements Runnable {
 			}
 		} catch (Exception ex) {
 			logger.error("Exception Occurs (Please see logs for more details:" + ex.getMessage());
+			logger.error(ex);	
 		}
 		finally{	
 			/*if any exception come, then make all block available which are not written yet*/

@@ -9,6 +9,10 @@ import the.floow.challenge.processor.CountProcessor;
 import the.floow.challenge.processor.WordCountProcessor;
 import the.floow.challenge.service.ExecutorService;
 
+/** 
+This is the count executor class using as central class for counting 
+Words/Lines/Number etc. By default this class behaves as a word count executor. 
+@author Wajid; */
 public class CountExecutor implements GenericExecutor {
 
 	public ObjectId executorID;
@@ -20,6 +24,9 @@ public class CountExecutor implements GenericExecutor {
 	final static Logger logger = Logger.getLogger(CountExecutor.class);
 	private CountProcessor countProcessor;
 
+	/**
+	This is the constructor of count executor with default word count processor 
+    @param inParams the input parameters object */
 	public CountExecutor(InputParameter inParams) {
 		this.ds = inParams.dataSouce;
 		this.filePath = inParams.filePath;
@@ -28,7 +35,10 @@ public class CountExecutor implements GenericExecutor {
 		this.executorService = new ExecutorService(inParams);
 		this.countProcessor = new WordCountProcessor();
 	}
-	
+	/**
+	This is the constructor of count executor where you can pass the count processor
+    @param inParams the input parameters object 
+    @param cProcessor the count processor object (Word/Number/Line) */
 	public CountExecutor(InputParameter inParams, CountProcessor cProcessor) {
 		this.ds = inParams.dataSouce;
 		this.filePath = inParams.filePath;
@@ -37,7 +47,18 @@ public class CountExecutor implements GenericExecutor {
 		this.executorService = new ExecutorService(inParams);
 		this.countProcessor = cProcessor;
 	}
-
+	/**
+	This is the main function of executor which is performing following functionalities
+	1. Register the executor in database
+	2. If the source parameter exists, then create the file and file-blocks object in database.
+	3. If the source parameter exists, then this executor can be a candidate for controlling 
+	   the Workload distribution.	   
+	4. If source  parameter is missing, then this executor can only work as 
+	   a worker (getting data from database and process it)
+	4. Run the WorkerController(workload distributor) and Worker threads. 
+    @param inParams the input parameters object 
+    @param cProcessor the count processor object (Word/Number/Line) */
+	@Override	
 	public void execute() {
 		try {
 			// register executor and create file if no present
@@ -52,7 +73,7 @@ public class CountExecutor implements GenericExecutor {
 					Thread controllerThread = new Thread(controller);
 					controllerThread.start();
 				}
-
+				/*Initiate the Worker thread with count processor */
 				Worker worker = new Worker(this.inParams, executorID, fileID, this.countProcessor);
 				Thread workerThread = new Thread(worker);
 				workerThread.start();

@@ -33,7 +33,7 @@ public class SettingsDao extends GenericDao {
 		Document excDoc = new Document("name", name)
 				.append("value", value)
 				.append("createdTimestamp", new Date())
-                .append("updatedTimestamp", new Date());
+                .append("updatedTimestamp", new Date()); 
 		// if setting not exist, then create
 		if(collection.count(eq("name", name))==0){
 			collection.insertOne(excDoc);
